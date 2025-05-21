@@ -1,6 +1,6 @@
 # === Node.js (backend) ===
 backend/node_modules/
-backend/.env
+#backend/.env
 backend/.env.local
 backend/npm-debug.log
 backend/yarn-debug.log
