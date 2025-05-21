@@ -1,0 +1,25 @@
+# === Node.js (backend) ===
+backend/node_modules/
+backend/.env
+backend/.env.local
+backend/npm-debug.log
+backend/yarn-debug.log
+backend/yarn-error.log
+
+# === Docker artifacts (if any) ===
+*.log
+*.pid
+*.tar
+*.gz
+
+# === OS/System files ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+logs/
+*.log
+
+# === IDE files ===
+.vscode/
+.idea/

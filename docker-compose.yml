@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: zlagoda_postgres
+    environment:
+      POSTGRES_USER: zlagoda_user
+      POSTGRES_PASSWORD: zlagoda123
+      POSTGRES_DB: zlagoda_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - zlagoda_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zlagoda_backend
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    working_dir: /app/backend
+    volumes:
+      - ./backend:/app/backend
+    command: [ "node", "src/index.js" ]
+    networks:
+      - zlagoda_network
+
+networks:
+  zlagoda_network:
+    driver: bridge
+
