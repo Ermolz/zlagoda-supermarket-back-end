@@ -1,19 +1,21 @@
 import * as authService from '../services/auth.service.js';
 
-export const register = async (req, res, next) => {
+export const register = async (req, res) => {
   try {
-    const result = await authService.register(req.body);
+    const { email, password, fullName } = req.body;
+    const result = await authService.register({ email, password, fullName });
     res.status(201).json(result);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
-export const login = async (req, res, next) => {
+export const login = async (req, res) => {
   try {
-    const result = await authService.login(req.body);
+    const { email, password } = req.body;
+    const result = await authService.login({ email, password });
     res.json(result);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    res.status(401).json({ message: error.message });
   }
 };

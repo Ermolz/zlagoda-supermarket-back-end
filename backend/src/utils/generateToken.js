@@ -3,8 +3,12 @@ import config from '../config/index.js';
 
 export const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, role: user.role }, // payload
+    { 
+      id_employee: user.id_employee, 
+      role: user.empl_role,
+      email: user.email
+    },
     config.jwtSecret,
-    { expiresIn: '1h' }
+    { expiresIn: '24h' }
   );
 };
