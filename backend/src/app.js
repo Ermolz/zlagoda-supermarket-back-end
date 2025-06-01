@@ -1,5 +1,6 @@
 import express from 'express';
 import config from './config/index.js';
+import authRoutes from './routes/auth.routes.js';
 
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(express.json());
 
 // ===== ROUTES =====
 // TODO: app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 
 // ===== ROUTES =====
