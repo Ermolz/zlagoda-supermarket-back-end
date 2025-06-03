@@ -4,8 +4,14 @@ import authRoutes from './routes/auth.routes.js';
 import cashierRoutes from './routes/cashier.routes.js';
 import managerRoutes from './routes/manager.routes.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
+import cors from 'cors';
 
 const app = express();
+
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  }));
 // ===== REQUEST LOGGING =====
 // TODO: app.use(httpLogger);
 
