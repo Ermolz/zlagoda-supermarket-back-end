@@ -126,7 +126,38 @@ export class CashierService {
 
     // 11. За номером чеку вивести усю інформацію про даний чек
     async getCheckDetails(checkNumber) {
-        return this.checkRepo.findByIdWithDetails(checkNumber);
+        // Check if check exists
+        const check = await this.checkRepo.findWithDetails(checkNumber);
+        if (!check || check.length === 0) {
+            throw new Error('Check not found');
+        }
+
+        // Format the response
+        const sales = check.map(row => ({
+            UPC: row.UPC,
+            product_name: row.product_name,
+            characteristics: row.characteristics,
+            product_number: row.product_number,
+            selling_price: row.selling_price
+        }));
+
+        return {
+            check_number: check[0].check_number,
+            print_date: check[0].print_date,
+            sum_total: check[0].sum_total,
+            vat: check[0].vat,
+            cashier: {
+                id_employee: check[0].id_employee,
+                surname: check[0].empl_surname,
+                name: check[0].empl_name
+            },
+            customer: check[0].card_number ? {
+                card_number: check[0].card_number,
+                surname: check[0].cust_surname,
+                name: check[0].cust_name
+            } : null,
+            sales
+        };
     }
 
     // 12. Отримати інформацію про усі акційні товари

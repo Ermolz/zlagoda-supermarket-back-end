@@ -106,12 +106,25 @@ export const validateCategory = (req, res, next) => {
 export const validateProduct = (req, res, next) => {
     const { category_number, product_name, producer, characteristics } = req.body;
 
-    if (!category_number || !product_name || !producer) {
+    // For update operations, we don't require all fields
+    const isUpdate = req.method === 'PUT';
+
+    // Check required fields only for create operations
+    if (!isUpdate && (!category_number || !product_name || !producer)) {
         return res.status(400).json({ error: 'Category number, product name and producer are required' });
     }
 
-    if (product_name.length > 50 || producer.length > 50) {
-        return res.status(400).json({ error: 'Product name or producer name is too long' });
+    // Validate string lengths if provided
+    if (product_name && product_name.length > 50) {
+        return res.status(400).json({ error: 'Product name is too long' });
+    }
+
+    if (producer && producer.length > 50) {
+        return res.status(400).json({ error: 'Producer name is too long' });
+    }
+
+    if (characteristics && characteristics.length > 100) {
+        return res.status(400).json({ error: 'Characteristics is too long' });
     }
 
     next();
@@ -120,19 +133,25 @@ export const validateProduct = (req, res, next) => {
 export const validateStoreProduct = (req, res, next) => {
     const { UPC, id_product, selling_price, product_number, promotional_product } = req.body;
 
-    if (!UPC || !id_product || !selling_price || !product_number) {
+    // For update operations, we don't require all fields
+    const isUpdate = req.method === 'PUT';
+
+    // Check required fields only for create operations
+    if (!isUpdate && (!UPC || !id_product || selling_price === undefined || product_number === undefined)) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
-    if (UPC.length !== 12) {
+    // Validate UPC format if provided
+    if (UPC && UPC.length !== 12) {
         return res.status(400).json({ error: 'UPC must be 12 digits' });
     }
 
-    if (selling_price <= 0) {
+    // Validate numeric fields if provided
+    if (selling_price !== undefined && selling_price <= 0) {
         return res.status(400).json({ error: 'Price must be positive' });
     }
 
-    if (product_number < 0) {
+    if (product_number !== undefined && product_number < 0) {
         return res.status(400).json({ error: 'Product number cannot be negative' });
     }
 
@@ -145,32 +164,35 @@ export const validateCustomerCard = (req, res, next) => {
         phone_number, city, street, zip_code, percent 
     } = req.body;
 
-    // Check required fields
-    if (!card_number || !cust_surname || !cust_name || !phone_number || percent === undefined) {
+    // For update operations, we don't require all fields
+    const isUpdate = req.method === 'PUT';
+
+    // Check required fields only for create operations
+    if (!isUpdate && (!card_number || !cust_surname || !cust_name || !phone_number || percent === undefined)) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate card number format
-    if (!/^\d{12}$/.test(card_number)) {
+    // Validate card number format if provided
+    if (card_number && !/^\d{12}$/.test(card_number)) {
         return res.status(400).json({ error: 'Card number must be 12 digits' });
     }
 
-    // Validate phone number format
-    if (!/^\+380\d{9}$/.test(phone_number)) {
+    // Validate phone number format if provided
+    if (phone_number && !/^\+380\d{9}$/.test(phone_number)) {
         return res.status(400).json({ error: 'Invalid phone number format' });
     }
 
-    // Validate percent
-    if (isNaN(percent) || percent < 0 || percent > 100) {
+    // Validate percent if provided
+    if (percent !== undefined && (isNaN(percent) || percent < 0 || percent > 100)) {
         return res.status(400).json({ error: 'Percent must be between 0 and 100' });
     }
 
-    // Validate string lengths
-    if (cust_surname.length > 50) {
+    // Validate string lengths if provided
+    if (cust_surname && cust_surname.length > 50) {
         return res.status(400).json({ error: 'Customer surname is too long' });
     }
 
-    if (cust_name.length > 50) {
+    if (cust_name && cust_name.length > 50) {
         return res.status(400).json({ error: 'Customer name is too long' });
     }
 

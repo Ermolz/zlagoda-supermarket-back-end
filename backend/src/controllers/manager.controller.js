@@ -8,13 +8,20 @@ export class ManagerController {
     // CRUD operations for employees
     async addEmployee(req, res) {
         try {
+            console.log('Creating employee with data:', req.body);
             const employee = await this.managerService.addEmployee(req.body);
             res.status(201).json(employee);
         } catch (error) {
+            console.error('Error adding employee:', error);
+            console.error('Error stack:', error.stack);
             if (error.message.includes('already exists')) {
                 res.status(409).json({ error: error.message });
-            } else {
+            } else if (error.message.includes('validation')) {
                 res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -27,7 +34,18 @@ export class ManagerController {
             }
             res.json(employee);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error('Error updating employee:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('validation')) {
+                res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else if (error.message.includes('already in use')) {
+                res.status(409).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     }
 
@@ -39,10 +57,15 @@ export class ManagerController {
             }
             res.status(204).send();
         } catch (error) {
-            if (error.message.includes('foreign key')) {
+            console.error('Error deleting employee:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else if (error.message.includes('foreign key')) {
                 res.status(409).json({ error: 'Cannot delete employee with associated records' });
             } else {
-                res.status(400).json({ error: error.message });
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -59,7 +82,7 @@ export class ManagerController {
 
     async getCashiers(req, res) {
         try {
-            const cashiers = await this.managerService.getCashiersSortedBySurname();
+            const cashiers = await this.managerService.getCashiers();
             res.json(cashiers);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -169,10 +192,17 @@ export class ManagerController {
             }
             res.json(product);
         } catch (error) {
-            if (error.message.includes('foreign key')) {
+            console.error('Error updating product:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('validation')) {
+                res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else if (error.message.includes('foreign key')) {
                 res.status(409).json({ error: 'Invalid category number' });
             } else {
-                res.status(400).json({ error: error.message });
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -238,10 +268,17 @@ export class ManagerController {
             }
             res.json(product);
         } catch (error) {
-            if (error.message.includes('foreign key')) {
+            console.error('Error updating store product:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('validation')) {
+                res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else if (error.message.includes('foreign key')) {
                 res.status(409).json({ error: 'Invalid product ID' });
             } else {
-                res.status(400).json({ error: error.message });
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -315,7 +352,16 @@ export class ManagerController {
             }
             res.json(card);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error('Error updating customer card:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('validation')) {
+                res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     }
 

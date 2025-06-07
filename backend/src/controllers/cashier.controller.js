@@ -1,4 +1,8 @@
 import { CashierService } from '../services/cashier.service.js';
+import { db } from '../db/index.js';
+import priceService from '../services/price.service.js';
+import checkService from '../services/check.service.js';
+import storeProductService from '../services/store-product.service.js';
 
 export class CashierController {
     constructor() {
@@ -108,10 +112,15 @@ export class CashierController {
             const customer = await this.cashierService.addCustomerCard(req.body);
             res.status(201).json(customer);
         } catch (error) {
+            console.error('Error adding customer card:', error);
             if (error.message.includes('already exists')) {
                 res.status(409).json({ error: error.message });
-            } else {
+            } else if (error.message.includes('validation')) {
                 res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -124,10 +133,15 @@ export class CashierController {
             }
             res.json(customer);
         } catch (error) {
+            console.error('Error updating customer card:', error);
             if (error.message.includes('not found')) {
                 res.status(404).json({ error: error.message });
-            } else {
+            } else if (error.message.includes('validation')) {
                 res.status(400).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
             }
         }
     }
@@ -173,7 +187,14 @@ export class CashierController {
             }
             res.json(check);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error('Error getting check details:', error);
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else if (error.message.includes('Unauthorized')) {
+                res.status(403).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     }
 

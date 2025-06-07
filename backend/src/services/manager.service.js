@@ -21,17 +21,7 @@ export class ManagerService {
 
     // 1. Додавання даних
     async addEmployee(data) {
-        try {
-            return this.employeeService.create({
-                ...data,
-                empl_role: data.empl_role || 'cashier' // Default role if not specified
-            });
-        } catch (error) {
-            if (error.message.includes('duplicate key')) {
-                throw new Error('Employee with this ID already exists');
-            }
-            throw error;
-        }
+        return this.employeeRepo.createWithAuth(data, 'manager');
     }
 
     async addCustomerCard(data) {
@@ -52,11 +42,7 @@ export class ManagerService {
 
     // 2. Редагування даних
     async updateEmployee(id, data) {
-        const employee = await this.employeeRepo.findById(id);
-        if (!employee) {
-            throw new Error('Employee not found');
-        }
-        return this.employeeService.update(id, data);
+        return this.employeeRepo.update(id, data, 'manager');
     }
 
     async updateCustomerCard(id, data) {
@@ -77,11 +63,7 @@ export class ManagerService {
 
     // 3. Видалення даних
     async deleteEmployee(id) {
-        const employee = await this.employeeRepo.findById(id);
-        if (!employee) {
-            throw new Error('Employee not found');
-        }
-        return this.employeeService.delete(id);
+        return this.employeeRepo.delete(id, 'manager');
     }
 
     async deleteCustomerCard(id) {
@@ -110,9 +92,11 @@ export class ManagerService {
         return employees.sort((a, b) => a.empl_surname.localeCompare(b.empl_surname));
     }
 
-    async getCashiersSortedBySurname() {
-        const cashiers = await this.employeeRepo.findByRole('cashier');
-        return cashiers.sort((a, b) => a.empl_surname.localeCompare(b.empl_surname));
+    async getCashiers() {
+        const employees = await this.employeeRepo.findAll();
+        return employees
+            .filter(e => e.empl_role === 'cashier')
+            .sort((a, b) => a.empl_surname.localeCompare(b.empl_surname));
     }
 
     async getEmployeeContactsByName(surname) {

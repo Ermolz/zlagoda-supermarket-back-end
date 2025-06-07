@@ -25,16 +25,16 @@ export class BaseRepository {
     async findAll() {
         const query = `SELECT * FROM ${this.tableName}`;
         const { rows } = await pool.query(query);
-        return rows;
+        return this.formatRows(rows);
     }
 
-    async findById(id) {
+    async findById(id, idField = this.idField) {
         const query = `
             SELECT * FROM ${this.tableName}
-            WHERE ${this.idField} = $1
+            WHERE ${idField} = $1
         `;
         const { rows } = await pool.query(query, [id]);
-        return rows[0];
+        return this.formatRow(rows[0]);
     }
 
     formatRows(rows) {
@@ -50,8 +50,8 @@ export class BaseRepository {
         const formatted = {};
         for (const [key, value] of Object.entries(row)) {
             // Convert snake_case to camelCase and preserve case for UPC
-            const formattedKey = key === 'upc' ? 'UPC' : 
-                               key === 'upc_prom' ? 'UPC_prom' : 
+            const formattedKey = key.toLowerCase() === 'upc' ? 'UPC' : 
+                               key.toLowerCase() === 'upc_prom' ? 'UPC_prom' : 
                                key;
             formatted[formattedKey] = value;
         }
@@ -62,6 +62,8 @@ export class BaseRepository {
         if (!AccessControl.can(userRole, 'create', this.tableName)) {
             throw new Error('Unauthorized');
         }
+
+        this.validateData(data);
 
         const fields = Object.keys(data);
         const values = Object.values(data);
@@ -74,13 +76,15 @@ export class BaseRepository {
         `;
 
         const { rows } = await pool.query(query, values);
-        return rows[0];
+        return this.formatRow(rows[0]);
     }
 
     async update(id, data, idField = this.idField, userRole) {
         if (!AccessControl.can(userRole, 'update', this.tableName)) {
             throw new Error('Unauthorized');
         }
+
+        this.validateData(data);
 
         const fields = Object.keys(data);
         const values = Object.values(data);
@@ -94,7 +98,7 @@ export class BaseRepository {
         `;
 
         const { rows } = await pool.query(query, [...values, id]);
-        return rows[0];
+        return this.formatRow(rows[0]);
     }
 
     async delete(id, idField = this.idField, userRole) {
@@ -109,6 +113,6 @@ export class BaseRepository {
         `;
 
         const { rows } = await pool.query(query, [id]);
-        return rows[0];
+        return this.formatRow(rows[0]);
     }
 } 

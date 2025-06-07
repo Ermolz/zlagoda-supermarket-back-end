@@ -8,15 +8,78 @@ export class StoreProductRepository extends BaseRepository {
         this.idField = 'UPC';
     }
 
+    formatRow(row) {
+        if (!row) return row;
+        const formatted = {};
+        for (const [key, value] of Object.entries(row)) {
+            // Convert snake_case to camelCase and preserve case for UPC
+            const formattedKey = key.toLowerCase() === 'upc' ? 'UPC' : 
+                               key.toLowerCase() === 'upc_prom' ? 'UPC_prom' : 
+                               key;
+            formatted[formattedKey] = value;
+        }
+        return formatted;
+    }
+
     async create(data, userRole) {
+        if (!AccessControl.can(userRole, 'create', 'store_in_product')) {
+            throw new Error('Unauthorized');
+        }
+
+        // Validate UPC format
+        if (!data.UPC || !/^\d{12}$/.test(data.UPC)) {
+            throw new Error('UPC must be 12 digits');
+        }
+
+        // Validate UPC_prom format if provided
+        if (data.UPC_prom && !/^\d{12}$/.test(data.UPC_prom)) {
+            throw new Error('UPC_prom must be 12 digits');
+        }
+
+        // Validate numeric fields
+        if (isNaN(data.selling_price) || data.selling_price < 0) {
+            throw new Error('Selling price must be a non-negative number');
+        }
+
+        if (isNaN(data.product_number) || data.product_number < 0) {
+            throw new Error('Product number must be a non-negative number');
+        }
+
         return super.create(data, userRole);
     }
 
     async update(id, data, userRole) {
+        if (!AccessControl.can(userRole, 'update', 'store_in_product')) {
+            throw new Error('Unauthorized');
+        }
+
+        // Validate UPC_prom format if provided
+        if (data.UPC_prom && !/^\d{12}$/.test(data.UPC_prom)) {
+            throw new Error('UPC_prom must be 12 digits');
+        }
+
+        // Validate numeric fields if provided
+        if (data.selling_price !== undefined && (isNaN(data.selling_price) || data.selling_price < 0)) {
+            throw new Error('Selling price must be a non-negative number');
+        }
+
+        if (data.product_number !== undefined && (isNaN(data.product_number) || data.product_number < 0)) {
+            throw new Error('Product number must be a non-negative number');
+        }
+
+        // Get existing record to preserve UPC case
+        const existing = await this.findById(id);
+        if (!existing) {
+            throw new Error('Store product not found');
+        }
+
         return super.update(id, data, this.idField, userRole);
     }
 
     async delete(id, userRole) {
+        if (!AccessControl.can(userRole, 'delete', 'store_in_product')) {
+            throw new Error('Unauthorized');
+        }
         return super.delete(id, this.idField, userRole);
     }
 
