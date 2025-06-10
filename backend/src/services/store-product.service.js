@@ -1,5 +1,4 @@
 import priceService from './price.service.js';
-import db from '../db/index.js';
 
 class StoreProductService {
     // TODO: Implement price recalculation when new batch arrives

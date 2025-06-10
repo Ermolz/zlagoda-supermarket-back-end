@@ -1,5 +1,5 @@
 import { CashierService } from '../services/cashier.service.js';
-import { db } from '../db/index.js';
+
 import priceService from '../services/price.service.js';
 import checkService from '../services/check.service.js';
 import storeProductService from '../services/store-product.service.js';

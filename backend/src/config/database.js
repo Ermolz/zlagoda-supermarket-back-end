@@ -21,4 +21,8 @@ pool.on('connect', () => {
     console.log('Connected to the database');
 });
 
+pool.query('SELECT 1')
+    .then(() => console.log('✅ Initial DB connection successful'))
+    .catch(err => console.error('❌ Initial DB connection failed:', err));
+
 export default pool; 
