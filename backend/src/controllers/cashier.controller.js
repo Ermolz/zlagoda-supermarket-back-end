@@ -110,8 +110,8 @@ export class CashierController {
     async addCustomerCard(req, res) {
         try {
             // Check card number format
-            if (!/^\d{12}$/.test(req.body.card_number)) {
-                return res.status(400).json({ error: 'Card number must be 12 digits' });
+            if (!/^\d{13,}$/.test(req.body.card_number)) {
+                return res.status(400).json({ error: 'Card number must be at least 13 digits' });
             }
 
             const customer = await this.cashierService.addCustomerCard(req.body);

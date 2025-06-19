@@ -15,8 +15,8 @@ export class CustomerCardRepository extends BaseRepository {
         }
 
         // Validate card number format only for create operation
-        if (!isUpdate && data.card_number && !/^\d{12}$/.test(data.card_number)) {
-            throw new Error('Card number must be 12 digits');
+        if (!isUpdate && data.card_number && !/^\d{13,}$/.test(data.card_number)) {
+            throw new Error('Card number must be at least 13 digits');
         }
 
         // Validate phone number format if provided
