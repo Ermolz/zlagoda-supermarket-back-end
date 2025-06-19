@@ -37,6 +37,9 @@ export class CashierService {
 
     // 4. Здійснити пошук товарів за назвою
     async searchProductsByName(name) {
+        if (!name) {
+            return [];
+        }
         const products = await this.productRepo.findWithCategoryDetails();
         return products.filter(p => 
             p.product_name.toLowerCase().includes(name.toLowerCase())
@@ -51,6 +54,9 @@ export class CashierService {
 
     // 6. Здійснити пошук постійних клієнтів за прізвищем
     async searchCustomersBySurname(surname) {
+        if (!surname) {
+            return [];
+        }
         const customers = await this.customerCardRepo.findAll();
         return customers.filter(c => 
             c.cust_surname.toLowerCase().includes(surname.toLowerCase())
@@ -60,8 +66,8 @@ export class CashierService {
     // 7. Здійснювати продаж товарів (додавання чеків)
     async createCheck(checkData, salesData) {
         // Check check number format
-        if (!checkData.check_number || !/^CHECK\d{3}$/.test(checkData.check_number)) {
-            throw new Error('Check number must be in format CHECK followed by 3 digits');
+        if (!checkData.check_number || !/^CHK\d+$/.test(checkData.check_number)) {
+            throw new Error('Check number must be in format CHK followed by digits');
         }
 
         // Check products availability and quantity

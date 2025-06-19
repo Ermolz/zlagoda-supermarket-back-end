@@ -1,11 +1,12 @@
 import pg from 'pg';
+import { logger } from '../utils/logger.js';
 const { Pool } = pg;
 
 const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'zlagoda',
-    password: process.env.DB_PASSWORD || 'postgres',
+    user: process.env.DB_USER || 'zlagoda_user',
+    host: process.env.DB_HOST || 'postgres',
+    database: process.env.DB_NAME || 'zlagoda_db',
+    password: process.env.DB_PASSWORD || 'zlagoda123',
     port: parseInt(process.env.DB_PORT || '5432'),
     ssl: process.env.DB_SSL === 'true' ? {
         rejectUnauthorized: false
@@ -13,16 +14,16 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
+    logger.error('Unexpected error on idle client', { error: err.message });
     process.exit(-1);
 });
 
 pool.on('connect', () => {
-    console.log('Connected to the database');
+    logger.info('Connected to the database');
 });
 
 pool.query('SELECT 1')
-    .then(() => console.log('✅ Initial DB connection successful'))
-    .catch(err => console.error('❌ Initial DB connection failed:', err));
+    .then(() => logger.info('Initial DB connection successful'))
+    .catch(err => logger.error('Initial DB connection failed', { error: err.message }));
 
 export default pool; 

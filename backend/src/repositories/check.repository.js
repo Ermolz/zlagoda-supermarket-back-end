@@ -20,8 +20,8 @@ export class CheckRepository extends BaseRepository {
         }
 
         // Validate check number format
-        if (!/^CHECK\d{3}$/.test(checkData.check_number)) {
-            throw new Error('Check number must be in format CHECK followed by 3 digits');
+        if (!/^CHK\d+$/.test(checkData.check_number)) {
+            throw new Error('Check number must be in format CHK followed by digits');
         }
 
         // Validate employee ID format

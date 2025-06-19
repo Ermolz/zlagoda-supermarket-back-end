@@ -2,6 +2,7 @@ import { BaseRepository } from './base.repository.js';
 import { AccessControl } from '../utils/access-control.js';
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
+import { logger } from '../utils/logger.js';
 
 export class EmployeeRepository extends BaseRepository {
     constructor() {
@@ -9,20 +10,54 @@ export class EmployeeRepository extends BaseRepository {
         this.idField = 'id_employee';
     }
 
+    async getNextEmployeeId() {
+        const query = `
+            SELECT id_employee 
+            FROM ${this.tableName}
+            WHERE id_employee LIKE 'E%'
+            ORDER BY id_employee DESC
+            LIMIT 1
+        `;
+        const { rows } = await pool.query(query);
+        
+        if (rows.length === 0) {
+            logger.debug('No existing employees found, starting with E001');
+            return 'E001';
+        }
+
+        const lastId = rows[0].id_employee;
+        const lastNumber = parseInt(lastId.substring(1));
+        const nextNumber = lastNumber + 1;
+        const nextId = `E${nextNumber.toString().padStart(3, '0')}`;
+        
+        logger.debug('Generated next employee ID', { lastId, nextId });
+        return nextId;
+    }
+
     async createWithAuth(data, userRole) {
         if (!AccessControl.can(userRole, 'create', this.tableName)) {
+            logger.warn('Unauthorized attempt to create employee', { userRole });
             throw new Error('Unauthorized');
         }
 
         // Validate required fields
-        if (!data.id_employee || !data.empl_surname || !data.empl_name || !data.empl_role || 
+        if (!data.empl_surname || !data.empl_name || !data.empl_role || 
             !data.salary || !data.phone_number || !data.city || !data.street || !data.zip_code ||
             !data.date_of_birth || !data.date_of_start || !data.email || !data.password) {
+            logger.error('Missing required fields in employee creation', {
+                providedFields: Object.keys(data)
+            });
             throw new Error('Missing required fields');
         }
 
+        // Generate next available ID if not provided
+        if (!data.id_employee) {
+            data.id_employee = await this.getNextEmployeeId();
+            logger.info('Generated new employee ID', { id: data.id_employee });
+        }
         // Validate ID format
-        if (!/^E\d{3}$/.test(data.id_employee)) {
+        else if (!/^E\d{3}$/.test(data.id_employee)) {
+            logger.error('Invalid employee ID format', { id: data.id_employee });
             throw new Error('Employee ID must be in format E followed by 3 digits');
         }
 
@@ -90,6 +125,7 @@ export class EmployeeRepository extends BaseRepository {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
+            logger.debug('Started transaction for employee creation');
 
             // Check if employee with this ID already exists
             const existingEmployee = await client.query(
@@ -98,6 +134,7 @@ export class EmployeeRepository extends BaseRepository {
             );
 
             if (existingEmployee.rows.length > 0) {
+                logger.warn('Attempted to create employee with existing ID', { id: data.id_employee });
                 throw new Error('Employee with this ID already exists');
             }
 
@@ -108,6 +145,7 @@ export class EmployeeRepository extends BaseRepository {
             );
 
             if (existingEmail.rows.length > 0) {
+                logger.warn('Attempted to create employee with existing email', { email: data.email });
                 throw new Error('Email is already in use');
             }
 
@@ -127,6 +165,7 @@ export class EmployeeRepository extends BaseRepository {
             `;
 
             const employeeResult = await client.query(employeeQuery, values);
+            logger.info('Created new employee record', { id: employeeResult.rows[0].id_employee });
 
             // Hash password and create auth record
             const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -136,11 +175,19 @@ export class EmployeeRepository extends BaseRepository {
             `;
 
             await client.query(authQuery, [data.id_employee, data.email, hashedPassword]);
+            logger.info('Created employee auth record', { id: data.id_employee });
 
             await client.query('COMMIT');
+            logger.debug('Committed transaction for employee creation');
+            
             return this.formatRow(employeeResult.rows[0]);
         } catch (error) {
             await client.query('ROLLBACK');
+            logger.error('Failed to create employee', {
+                error: error.message,
+                stack: error.stack,
+                employeeData: { ...data, password: '[REDACTED]' }
+            });
             throw error;
         } finally {
             client.release();

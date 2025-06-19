@@ -1,8 +1,5 @@
 import { CashierService } from '../services/cashier.service.js';
-
-import priceService from '../services/price.service.js';
-import checkService from '../services/check.service.js';
-import storeProductService from '../services/store-product.service.js';
+import { logger } from '../utils/logger.js';
 
 export class CashierController {
     constructor() {
@@ -43,6 +40,9 @@ export class CashierController {
     async searchProducts(req, res) {
         try {
             const { name } = req.query;
+            if (!name) {
+                return res.status(400).json({ error: 'Name parameter is required' });
+            }
             const products = await this.cashierService.searchProductsByName(name);
             res.json(products);
         } catch (error) {
@@ -64,6 +64,9 @@ export class CashierController {
     async searchCustomers(req, res) {
         try {
             const { surname } = req.query;
+            if (!surname) {
+                return res.status(400).json({ error: 'Surname parameter is required' });
+            }
             const customers = await this.cashierService.searchCustomersBySurname(surname);
             res.json(customers);
         } catch (error) {
@@ -87,6 +90,8 @@ export class CashierController {
                 id_employee: req.user.id_employee,
                 print_date: check.print_date || new Date().toISOString()
             };
+
+            logger.info('checkData', checkData);
 
             const result = await this.cashierService.createCheck(checkData, sales);
             res.status(201).json(result);
@@ -177,8 +182,8 @@ export class CashierController {
             const { checkNumber } = req.params;
             
             // Check format of check number
-            if (!/^CHECK\d{3}$/.test(checkNumber)) {
-                return res.status(400).json({ error: 'Check number must be in format CHECK followed by 3 digits' });
+            if (!/^CHK\d+$/.test(checkNumber)) {
+                return res.status(400).json({ error: 'Check number must be in format CHK followed by digits' });
             }
 
             const check = await this.cashierService.getCheckDetails(checkNumber);

@@ -4,7 +4,7 @@ export const roleMiddleware = (allowedRoles) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        if (!allowedRoles.includes(req.user.role)) {
+        if (!allowedRoles.includes(req.user.empl_role)) {
             return res.status(403).json({ message: 'Access denied' });
         }
 
