@@ -116,9 +116,9 @@ export class CashierService {
     // 9. Переглянути список усіх чеків, що створив касир за цей день
     async getTodayChecks(cashierId) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setUTCHours(23, 59, 59, 999);
         
         return this.checkRepo.findByDateRange(today, tomorrow)
             .then(checks => checks.filter(check => check.id_employee === cashierId));
@@ -126,8 +126,24 @@ export class CashierService {
 
     // 10. Переглянути список усіх чеків, що створив касир за певний період часу
     async getChecksByDateRange(cashierId, startDate, endDate) {
-        return this.checkRepo.findByDateRange(startDate, endDate)
-            .then(checks => checks.filter(check => check.id_employee === cashierId));
+        console.log('Searching checks for cashier:', cashierId);
+        console.log('Start date:', startDate, 'type:', typeof startDate);
+        console.log('End date:', endDate, 'type:', typeof endDate);
+        
+        // Ensure dates are in correct format
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        console.log('Formatted start:', start.toISOString());
+        console.log('Formatted end:', end.toISOString());
+        
+        return this.checkRepo.findByDateRange(start, end)
+            .then(checks => {
+                console.log('Found checks:', checks.length);
+                return checks.filter(check => check.id_employee === cashierId);
+            });
     }
 
     // 11. За номером чеку вивести усю інформацію про даний чек

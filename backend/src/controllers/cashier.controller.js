@@ -154,7 +154,7 @@ export class CashierController {
     // 9. View list of all checks created by the cashier for this day
     async getTodayChecks(req, res) {
         try {
-            const checks = await this.cashierService.getTodayChecks(req.user.id);
+            const checks = await this.cashierService.getTodayChecks(req.user.id_employee);
             res.json(checks);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -165,8 +165,9 @@ export class CashierController {
     async getChecksByDateRange(req, res) {
         try {
             const { startDate, endDate } = req.query;
+            console.log('User data:', req.user);
             const checks = await this.cashierService.getChecksByDateRange(
-                req.user.id,
+                req.user.id_employee,
                 new Date(startDate),
                 new Date(endDate)
             );
