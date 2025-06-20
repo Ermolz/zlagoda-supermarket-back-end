@@ -900,4 +900,9 @@ router.get('/reports/checks/total', managerController.getTotalSales.bind(manager
  */
 router.get('/reports/product-sales', managerController.getProductSalesStats.bind(managerController));
 
+// Sales Analysis Routes
+router.get('/sales/cashier/:employeeId', managerController.getSalesByCashierAndPeriod.bind(managerController));
+router.get('/sales/cashiers', managerController.getAllCashiersSalesByPeriod.bind(managerController));
+router.get('/sales/product/:productId', managerController.getProductSalesByPeriod.bind(managerController));
+
 export default router; 

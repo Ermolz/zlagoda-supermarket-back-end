@@ -510,4 +510,68 @@ export class ManagerController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    async getSalesByCashierAndPeriod(req, res, next) {
+        try {
+            const { employeeId } = req.params;
+            const { startDate, endDate } = req.query;
+
+            if (!employeeId || !startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: employeeId, startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getSalesByCashierAndPeriod(
+                employeeId,
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getAllCashiersSalesByPeriod(req, res, next) {
+        try {
+            const { startDate, endDate } = req.query;
+
+            if (!startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getAllCashiersSalesByPeriod(
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getProductSalesByPeriod(req, res, next) {
+        try {
+            const { productId } = req.params;
+            const { startDate, endDate } = req.query;
+
+            if (!productId || !startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: productId, startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getProductSalesByPeriod(
+                productId,
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 } 

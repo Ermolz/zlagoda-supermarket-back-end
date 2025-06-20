@@ -6,6 +6,7 @@ import { StoreProductRepository } from '../repositories/store-product.repository
 import { CheckRepository } from '../repositories/check.repository.js';
 import { SaleRepository } from '../repositories/sale.repository.js';
 import { EmployeeService } from './employee.service.js';
+import { ManagerRepository } from '../repositories/manager.repository.js';
 
 export class ManagerService {
     constructor() {
@@ -17,6 +18,7 @@ export class ManagerService {
         this.checkRepo = new CheckRepository();
         this.saleRepo = new SaleRepository();
         this.employeeService = new EmployeeService();
+        this.managerRepository = new ManagerRepository();
     }
 
     // 1. Додавання даних
@@ -277,5 +279,17 @@ export class ManagerService {
                 }
             }))
         };
+    }
+
+    async getSalesByCashierAndPeriod(employeeId, startDate, endDate) {
+        return this.managerRepository.getSalesByCashierAndPeriod(employeeId, startDate, endDate);
+    }
+
+    async getAllCashiersSalesByPeriod(startDate, endDate) {
+        return this.managerRepository.getAllCashiersSalesByPeriod(startDate, endDate);
+    }
+
+    async getProductSalesByPeriod(productId, startDate, endDate) {
+        return this.managerRepository.getProductSalesByPeriod(productId, startDate, endDate);
     }
 } 
