@@ -308,6 +308,15 @@ export class ManagerController {
         }
     }
 
+    async getNonPromotionalProducts(req, res) {
+        try {
+            const products = await this.managerService.getNonPromotionalProducts(req.query.sortBy);
+            res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // Customer cards
     async getAllCustomersSortedBySurname(req, res) {
         try {

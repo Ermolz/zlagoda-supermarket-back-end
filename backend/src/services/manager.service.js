@@ -163,8 +163,11 @@ export class ManagerService {
 
     // 17-21. Отримання інформації про чеки та продажі
     async getChecksByEmployee(employeeId, startDate, endDate) {
-        return this.checkRepo.findByDateRange(startDate, endDate)
-            .then(checks => checks.filter(check => check.id_employee === employeeId));
+        return this.checkRepo.findByEmployeeAndDateRange(
+            employeeId,
+            startDate || new Date(0),  // если дата не указана, берем с начала времен
+            endDate || new Date()      // если дата не указана, берем текущую дату
+        );
     }
 
     async getAllChecksByDateRange(startDate, endDate) {

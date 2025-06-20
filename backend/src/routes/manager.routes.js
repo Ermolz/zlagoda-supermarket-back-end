@@ -406,6 +406,20 @@ router.get('/store-products/promotional', managerController.getPromotionalProduc
 
 /**
  * @swagger
+ * /api/manager/store-products/non-promotional:
+ *   get:
+ *     summary: Get non-promotional products
+ *     tags: [Manager]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of non-promotional products
+ */
+router.get('/store-products/non-promotional', managerController.getNonPromotionalProducts.bind(managerController));
+
+/**
+ * @swagger
  * /api/manager/store-products/{upc}:
  *   get:
  *     summary: Get store product by UPC

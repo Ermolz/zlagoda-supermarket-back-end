@@ -185,15 +185,53 @@ export class CheckRepository extends BaseRepository {
 
     async findByEmployeeAndDateRange(employeeId, startDate, endDate) {
         const query = `
-            SELECT c.*, e.empl_surname, e.empl_name,
-                   cc.cust_surname, cc.cust_name
-            FROM ${this.tableName} c
-            JOIN employee e ON c.id_employee = e.id_employee
-            LEFT JOIN customer_card cc ON c.card_number = cc.card_number
-            WHERE c.id_employee = $1 AND c.print_date BETWEEN $2 AND $3
+            WITH check_details AS (
+                SELECT 
+                    c.*,
+                    e.empl_surname,
+                    e.empl_name,
+                    cc.cust_surname,
+                    cc.cust_name,
+                    json_agg(
+                        json_build_object(
+                            'UPC', s.UPC,
+                            'product_name', p.product_name,
+                            'quantity', s.product_number,
+                            'price', s.selling_price,
+                            'total', (s.product_number * s.selling_price)
+                        )
+                    ) as products
+                FROM ${this.tableName} c
+                JOIN employee e ON c.id_employee = e.id_employee
+                LEFT JOIN customer_card cc ON c.card_number = cc.card_number
+                LEFT JOIN sale s ON c.check_number = s.check_number
+                LEFT JOIN store_in_product sp ON s.UPC = sp.UPC
+                LEFT JOIN product p ON sp.id_product = p.id_product
+                WHERE c.id_employee = $1 
+                AND c.print_date BETWEEN $2 AND $3
+                GROUP BY 
+                    c.check_number,
+                    c.id_employee,
+                    c.card_number,
+                    c.print_date,
+                    c.sum_total,
+                    c.vat,
+                    e.empl_surname,
+                    e.empl_name,
+                    cc.cust_surname,
+                    cc.cust_name
+            )
+            SELECT *
+            FROM check_details
+            ORDER BY print_date DESC
         `;
         const { rows } = await pool.query(query, [employeeId, startDate, endDate]);
-        return rows;
+        
+        // Преобразуем null в пустой массив для products
+        return rows.map(row => ({
+            ...row,
+            products: row.products || []
+        }));
     }
 
     async findWithDetails(checkNumber) {

@@ -6,63 +6,6 @@ import { logger } from '../utils/logger.js';
 
 const employeeRepo = new EmployeeRepository();
 
-export const register = async ({ 
-  email, 
-  password, 
-  role,
-  surname,
-  name,
-  patronymic,
-  salary,
-  date_of_birth,
-  date_of_start,
-  phone_number,
-  city,
-  street,
-  zip_code 
-}) => {
-  const existing = await employeeRepo.findUserByEmail(email);
-  if (existing) {
-    throw new Error('User already exists');
-  }
-
-  const employeeData = {
-    empl_surname: surname,
-    empl_name: name,
-    empl_patronymic: patronymic,
-    empl_role: role,
-    salary: parseFloat(salary),
-    date_of_birth,
-    date_of_start,
-    phone_number,
-    city,
-    street,
-    zip_code
-  };
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = await employeeRepo.create(employeeData);
-
-  await employeeRepo.createAuth({
-    id_employee: user.id_employee,
-    email,
-    password: hashedPassword
-  });
-
-  const token = jwt.sign(
-    { 
-      id_employee: user.id_employee,
-      empl_role: role,
-      email
-    },
-    config.jwtSecret,
-    { expiresIn: '24h' }
-  );
-
-  return { token, user };
-};
-
 export const login = async ({ email, password }) => {
   logger.info('Login attempt', { email });
 
