@@ -72,6 +72,7 @@ router.use(roleMiddleware(['manager']));
  * /api/manager/employees:
  *   post:
  *     summary: Add new employee
+ *     description: Creates a new employee. The employee ID is generated automatically in format E### (e.g. E001). Only managers can create new employees.
  *     tags: [Manager]
  *     security:
  *       - bearerAuth: []
@@ -80,10 +81,76 @@ router.use(roleMiddleware(['manager']));
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Employee'
+ *             type: object
+ *             required:
+ *               - empl_surname
+ *               - empl_name
+ *               - empl_role
+ *               - salary
+ *               - phone_number
+ *               - city
+ *               - street
+ *               - zip_code
+ *               - date_of_birth
+ *               - date_of_start
+ *               - email
+ *               - password
+ *             properties:
+ *               empl_surname:
+ *                 type: string
+ *                 description: Employee surname
+ *               empl_name:
+ *                 type: string
+ *                 description: Employee name
+ *               patronymic:
+ *                 type: string
+ *                 description: Employee patronymic (optional)
+ *               empl_role:
+ *                 type: string
+ *                 enum: [cashier, manager]
+ *                 description: Employee role
+ *               salary:
+ *                 type: number
+ *                 description: Employee salary (must be positive)
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 description: Employee birth date (must be 18+ years old)
+ *               date_of_start:
+ *                 type: string
+ *                 format: date
+ *                 description: Employment start date
+ *               phone_number:
+ *                 type: string
+ *                 pattern: ^\+380\d{9}$
+ *                 description: Phone number in format +380XXXXXXXXX
+ *               city:
+ *                 type: string
+ *                 description: City of residence
+ *               street:
+ *                 type: string
+ *                 description: Street address
+ *               zip_code:
+ *                 type: string
+ *                 maxLength: 9
+ *                 description: ZIP code
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Employee email (must be unique)
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 description: Account password (min 8 characters)
  *     responses:
  *       201:
  *         description: Employee created successfully
+ *       400:
+ *         description: Validation error
+ *       403:
+ *         description: Unauthorized - only managers can create employees
+ *       409:
+ *         description: Email already in use
  */
 router.post('/employees', validateEmployee, managerController.addEmployee.bind(managerController));
 
@@ -186,6 +253,67 @@ router.get('/employees/cashiers', managerController.getCashiers.bind(managerCont
  *         description: Employee contacts
  */
 router.get('/employees/contacts/:surname', managerController.getEmployeeContacts.bind(managerController));
+
+/**
+ * @swagger
+ * /api/manager/employees/search:
+ *   get:
+ *     summary: Search employees by surname
+ *     tags: [Manager]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: surname
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Employee surname to search for
+ *     responses:
+ *       200:
+ *         description: List of matching employees
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id_employee:
+ *                     type: string
+ *                   empl_surname:
+ *                     type: string
+ *                   empl_name:
+ *                     type: string
+ *                   empl_patronymic:
+ *                     type: string
+ *                   empl_role:
+ *                     type: string
+ *                     enum: [cashier, manager]
+ *                   salary:
+ *                     type: number
+ *                   date_of_birth:
+ *                     type: string
+ *                     format: date
+ *                   date_of_start:
+ *                     type: string
+ *                     format: date
+ *                   phone_number:
+ *                     type: string
+ *                   city:
+ *                     type: string
+ *                   street:
+ *                     type: string
+ *                   zip_code:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *       400:
+ *         description: Surname parameter is missing
+ *       500:
+ *         description: Server error
+ */
+router.get('/employees/search', managerController.searchEmployees.bind(managerController));
 
 // Операції з категоріями
 /**
@@ -374,6 +502,50 @@ router.put('/products/:id_product', validateProduct, managerController.updatePro
  *         description: Product deleted successfully
  */
 router.delete('/products/:id_product', managerController.deleteProduct.bind(managerController));
+
+/**
+ * @swagger
+ * /api/manager/products/search:
+ *   get:
+ *     summary: Search products by name
+ *     tags: [Manager]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Product name to search for
+ *     responses:
+ *       200:
+ *         description: List of matching products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id_product:
+ *                     type: integer
+ *                   product_name:
+ *                     type: string
+ *                   characteristics:
+ *                     type: string
+ *                   producer:
+ *                     type: string
+ *                   category_number:
+ *                     type: integer
+ *                   category_name:
+ *                     type: string
+ *       400:
+ *         description: Name parameter is missing
+ *       500:
+ *         description: Server error
+ */
+router.get('/products/search', managerController.searchProducts.bind(managerController));
 
 // Операції з товарами в магазині
 /**

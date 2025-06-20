@@ -7,11 +7,6 @@ class StoreProductService {
         this.storeProductRepo = new StoreProductRepository();
     }
 
-    // TODO: Implement price recalculation when new batch arrives
-    // When new batch arrives:
-    // 1. Update all existing products of this type to new price
-    // 2. Add new batch quantity to existing
-    // 3. Update price history
     async recalculatePriceForNewBatch(productId, newBatchPrice, newBatchQuantity) {
         const client = await pool.connect();
         try {
@@ -70,10 +65,6 @@ class StoreProductService {
         }
     }
 
-    // TODO: Implement promotional price management
-    // 1. Calculate promotional price (80% of regular)
-    // 2. Create promotional UPC
-    // 3. Update or create promotional product entry
     async setPromotionalPrice(productId) {
         const client = await pool.connect();
         try {
@@ -151,12 +142,6 @@ class StoreProductService {
         }
     }
 
-    // TODO: Add sorting logic for products
-    // Implement sorting by:
-    // - name (default)
-    // - quantity
-    // - price
-    // With filters for promotional/non-promotional
     async getSortedProducts(sortBy = 'name', isPromotional = false) {
         let query = `
             SELECT sp.*, p.product_name, p.producer, p.characteristics,
@@ -186,10 +171,6 @@ class StoreProductService {
         return rows;
     }
 
-    // TODO: Implement batch management
-    // 1. Track batch arrival date
-    // 2. Track batch quantity
-    // 3. Track price changes
     async addNewBatch(productId, quantity, price) {
         const client = await pool.connect();
         try {
@@ -221,10 +202,6 @@ class StoreProductService {
         }
     }
 
-    // TODO: Add product statistics methods
-    // 1. Most sold products
-    // 2. Products running low on stock
-    // 3. Products with recent price changes
     async getProductStatistics() {
         const client = await pool.connect();
         try {
@@ -275,6 +252,20 @@ class StoreProductService {
         } finally {
             client.release();
         }
+    }
+
+    async getProductDetailsByUPC(upc) {
+        const product = await this.storeProductRepo.findByUPCWithDetails(upc);
+        if (!product) {
+            throw new Error('Product not found');
+        }
+        return {
+            UPC: product.UPC,
+            price: product.selling_price,
+            quantity: product.quantity,
+            name: product.name,
+            characteristics: product.characteristics
+        };
     }
 }
 

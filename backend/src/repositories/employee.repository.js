@@ -11,21 +11,61 @@ export class EmployeeRepository extends BaseRepository {
     }
 
     async getNextEmployeeId() {
+        // First, try to find any gaps in the sequence
         const query = `
+            WITH RECURSIVE number_sequence AS (
+                SELECT 1 as num
+                UNION ALL
+                SELECT num + 1
+                FROM number_sequence
+                WHERE num < (
+                    SELECT COALESCE(MAX(CAST(SUBSTRING(id_employee FROM 2) AS INTEGER)), 0) + 1
+                    FROM employee
+                    WHERE id_employee LIKE 'E%'
+                    AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+                )
+            ),
+            used_numbers AS (
+                SELECT CAST(SUBSTRING(id_employee FROM 2) AS INTEGER) as num
+                FROM ${this.tableName}
+                WHERE id_employee LIKE 'E%'
+                AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+            )
+            SELECT ns.num
+            FROM number_sequence ns
+            LEFT JOIN used_numbers un ON ns.num = un.num
+            WHERE un.num IS NULL
+            ORDER BY ns.num
+            LIMIT 1
+        `;
+
+        const { rows } = await pool.query(query);
+        
+        // If we found a gap, use it
+        if (rows.length > 0) {
+            const nextNumber = rows[0].num;
+            const nextId = `E${nextNumber.toString().padStart(3, '0')}`;
+            logger.debug('Found available employee ID in sequence', { nextId });
+            return nextId;
+        }
+
+        // If no gaps found, get the last used number
+        const lastIdQuery = `
             SELECT id_employee 
             FROM ${this.tableName}
             WHERE id_employee LIKE 'E%'
-            ORDER BY id_employee DESC
+            AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+            ORDER BY CAST(SUBSTRING(id_employee FROM 2) AS INTEGER) DESC
             LIMIT 1
         `;
-        const { rows } = await pool.query(query);
+        const lastIdResult = await pool.query(lastIdQuery);
         
-        if (rows.length === 0) {
+        if (lastIdResult.rows.length === 0) {
             logger.debug('No existing employees found, starting with E001');
             return 'E001';
         }
 
-        const lastId = rows[0].id_employee;
+        const lastId = lastIdResult.rows[0].id_employee;
         const lastNumber = parseInt(lastId.substring(1));
         const nextNumber = lastNumber + 1;
         const nextId = `E${nextNumber.toString().padStart(3, '0')}`;
@@ -50,16 +90,9 @@ export class EmployeeRepository extends BaseRepository {
             throw new Error('Missing required fields');
         }
 
-        // Generate next available ID if not provided
-        if (!data.id_employee) {
-            data.id_employee = await this.getNextEmployeeId();
-            logger.info('Generated new employee ID', { id: data.id_employee });
-        }
-        // Validate ID format
-        else if (!/^E\d{3}$/.test(data.id_employee)) {
-            logger.error('Invalid employee ID format', { id: data.id_employee });
-            throw new Error('Employee ID must be in format E followed by 3 digits');
-        }
+        // Always generate new ID, ignoring any provided ID
+        data.id_employee = await this.getNextEmployeeId();
+        logger.info('Generated new employee ID', { id: data.id_employee });
 
         // Validate role
         if (!['cashier', 'manager'].includes(data.empl_role)) {
@@ -459,10 +492,19 @@ export class EmployeeRepository extends BaseRepository {
     }
 
     async deleteAuth(id) {
-        const query = `
-            DELETE FROM employee_auth
-            WHERE id_employee = $1
-        `;
+        const query = `DELETE FROM employee_auth WHERE id_employee = $1`;
         await pool.query(query, [id]);
+    }
+
+    async searchBySurname(surname) {
+        const query = `
+            SELECT e.*, ea.email 
+            FROM ${this.tableName} e
+            LEFT JOIN employee_auth ea ON e.id_employee = ea.id_employee
+            WHERE LOWER(e.empl_surname) LIKE LOWER($1)
+            ORDER BY e.empl_surname, e.empl_name
+        `;
+        const { rows } = await pool.query(query, [`%${surname}%`]);
+        return rows;
     }
 }

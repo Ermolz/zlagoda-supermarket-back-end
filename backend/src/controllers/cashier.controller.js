@@ -56,7 +56,7 @@ export class CashierController {
             const products = await this.cashierService.getProductsByCategory(req.params.categoryId);
             res.json(products);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -255,6 +255,19 @@ export class CashierController {
             res.json(cashier);
         } catch (error) {
             res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getProductByUPC(req, res) {
+        try {
+            const product = await this.cashierService.getProductDetailsByUPC(req.params.upc);
+            res.json(product);
+        } catch (error) {
+            if (error.message === 'Product not found') {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     }
 } 

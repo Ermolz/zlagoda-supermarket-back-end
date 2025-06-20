@@ -10,15 +10,15 @@ export const validateEmployee = (req, res, next) => {
     const isUpdate = req.method === 'PUT';
 
     // Check required fields
-    if (!isUpdate && (!id_employee || !empl_surname || !empl_name || !empl_role || !salary || 
+    if (!isUpdate && (!empl_surname || !empl_name || !empl_role || !salary || 
         !phone_number || !city || !street || !zip_code ||
         !date_of_birth || !date_of_start || !email || !password)) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate ID format if provided
-    if (id_employee && !/^E\d{3}$/.test(id_employee)) {
-        return res.status(400).json({ error: 'Employee ID must be in format E followed by 3 digits' });
+    // Validate ID format only for updates
+    if (isUpdate && id_employee && !/^E\d+$/.test(id_employee)) {
+        return res.status(400).json({ error: 'Employee ID must be in format E followed by digits' });
     }
 
     // Validate role if provided

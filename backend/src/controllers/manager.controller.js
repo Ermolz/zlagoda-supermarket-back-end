@@ -164,8 +164,34 @@ export class ManagerController {
 
     async getProductsByCategory(req, res) {
         try {
-            const products = await this.managerService.getProductsByCategory(req.params.category_number);
+            const products = await this.managerService.getProductsByCategory(req.params.categoryId);
             res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async searchProducts(req, res) {
+        try {
+            const { name } = req.query;
+            if (!name) {
+                return res.status(400).json({ error: 'Name parameter is required' });
+            }
+            const products = await this.managerService.searchProducts(name);
+            res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async searchEmployees(req, res) {
+        try {
+            const { surname } = req.query;
+            if (!surname) {
+                return res.status(400).json({ error: 'Surname parameter is required' });
+            }
+            const employees = await this.managerService.searchEmployees(surname);
+            res.json(employees);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

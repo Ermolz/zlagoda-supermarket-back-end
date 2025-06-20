@@ -2,10 +2,6 @@ import priceService from './price.service.js';
 import pool from '../config/database.js';
 
 class CheckService {
-    // TODO: Implement check total calculation with VAT
-    // 1. Calculate total sum of all items
-    // 2. Calculate VAT (20% of total)
-    // 3. Return both total and VAT
     calculateCheckTotal(items) {
         if (!Array.isArray(items)) {
             throw new Error('Items must be an array');
@@ -29,10 +25,6 @@ class CheckService {
         };
     }
 
-    // TODO: Implement check total with customer discount
-    // 1. Calculate regular total with VAT
-    // 2. Apply customer card discount percentage
-    // 3. Return final total
     calculateCheckTotalWithDiscount(items, customerCard) {
         if (!customerCard || typeof customerCard.percent !== 'number') {
             throw new Error('Valid customer card with discount percentage is required');
@@ -51,8 +43,6 @@ class CheckService {
         };
     }
 
-    // TODO: Implement check storage duration validation (3 years)
-    // Checks should be stored for 3 years from print_date
     validateCheckStorageDuration(checkDate) {
         const date = new Date(checkDate);
         if (isNaN(date.getTime())) {
@@ -65,10 +55,6 @@ class CheckService {
         return date >= threeYearsAgo;
     }
 
-    // TODO: Implement check archival logic
-    // 1. Find checks older than 3 years
-    // 2. Archive them to separate storage
-    // 3. Remove from active storage
     async archiveOldChecks() {
         const client = await pool.connect();
         try {
@@ -151,10 +137,7 @@ class CheckService {
         }
     }
 
-    // TODO: Add check statistics methods
-    // 1. Total sum for cashier by date range
-    // 2. Total sum for all cashiers by date range
-    // 3. Product sales statistics
+
     async getCheckStatistics(startDate, endDate) {
         const client = await pool.connect();
         try {

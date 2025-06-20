@@ -3,6 +3,7 @@ import config from './config/index.js';
 import authRoutes from './routes/auth.routes.js';
 import cashierRoutes from './routes/cashier.routes.js';
 import managerRoutes from './routes/manager.routes.js';
+import statisticsRoutes from './routes/statistics.routes.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import cors from 'cors';
 import { logger, requestLogger } from './utils/logger.js';
@@ -25,6 +26,7 @@ app.use(requestLogger);
 app.use('/api/auth', authRoutes);
 app.use('/api/cashier', authMiddleware, cashierRoutes);
 app.use('/api/manager', authMiddleware, managerRoutes);
+app.use('/api/statistics', statisticsRoutes);
 
 // === Swagger config ===
 const swaggerOptions = {

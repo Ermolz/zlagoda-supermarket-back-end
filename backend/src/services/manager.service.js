@@ -136,6 +136,23 @@ export class ManagerService {
         return products.sort((a, b) => a.product_name.localeCompare(b.product_name));
     }
 
+    async searchProducts(name) {
+        if (!name) {
+            return [];
+        }
+        const products = await this.productRepo.findWithCategoryDetails();
+        return products.filter(p => 
+            p.product_name.toLowerCase().includes(name.toLowerCase())
+        ).sort((a, b) => a.product_name.localeCompare(b.product_name));
+    }
+
+    async searchEmployees(surname) {
+        if (!surname) {
+            return [];
+        }
+        return this.employeeRepo.searchBySurname(surname);
+    }
+
     // 14-16. Отримання інформації про товари в магазині
     async getAllStoreProductsSortedByQuantity() {
         const products = await this.storeProductRepo.findWithProductDetails();
@@ -165,8 +182,8 @@ export class ManagerService {
     async getChecksByEmployee(employeeId, startDate, endDate) {
         return this.checkRepo.findByEmployeeAndDateRange(
             employeeId,
-            startDate || new Date(0),  // если дата не указана, берем с начала времен
-            endDate || new Date()      // если дата не указана, берем текущую дату
+            startDate || new Date(0),
+            endDate || new Date()
         );
     }
 
