@@ -164,8 +164,34 @@ export class ManagerController {
 
     async getProductsByCategory(req, res) {
         try {
-            const products = await this.managerService.getProductsByCategory(req.params.category_number);
+            const products = await this.managerService.getProductsByCategory(req.params.categoryId);
             res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async searchProducts(req, res) {
+        try {
+            const { name } = req.query;
+            if (!name) {
+                return res.status(400).json({ error: 'Name parameter is required' });
+            }
+            const products = await this.managerService.searchProducts(name);
+            res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async searchEmployees(req, res) {
+        try {
+            const { surname } = req.query;
+            if (!surname) {
+                return res.status(400).json({ error: 'Surname parameter is required' });
+            }
+            const employees = await this.managerService.searchEmployees(surname);
+            res.json(employees);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -302,6 +328,15 @@ export class ManagerController {
     async getPromotionalProducts(req, res) {
         try {
             const products = await this.managerService.getPromotionalProducts(req.query.sortBy);
+            res.json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getNonPromotionalProducts(req, res) {
+        try {
+            const products = await this.managerService.getNonPromotionalProducts(req.query.sortBy);
             res.json(products);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -473,6 +508,70 @@ export class ManagerController {
             res.json(checks);
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getSalesByCashierAndPeriod(req, res, next) {
+        try {
+            const { employeeId } = req.params;
+            const { startDate, endDate } = req.query;
+
+            if (!employeeId || !startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: employeeId, startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getSalesByCashierAndPeriod(
+                employeeId,
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getAllCashiersSalesByPeriod(req, res, next) {
+        try {
+            const { startDate, endDate } = req.query;
+
+            if (!startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getAllCashiersSalesByPeriod(
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getProductSalesByPeriod(req, res, next) {
+        try {
+            const { productId } = req.params;
+            const { startDate, endDate } = req.query;
+
+            if (!productId || !startDate || !endDate) {
+                return res.status(400).json({ 
+                    message: 'Missing required parameters: productId, startDate, endDate' 
+                });
+            }
+
+            const result = await this.managerService.getProductSalesByPeriod(
+                productId,
+                startDate,
+                endDate
+            );
+            res.json(result);
+        } catch (error) {
+            next(error);
         }
     }
 } 

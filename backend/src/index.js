@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 import app from './app.js';
 import config from './config/index.js';
+import { logger } from './utils/logger.js';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ app.use(cors({
 }));
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT}`);
 });
 
 export default app;

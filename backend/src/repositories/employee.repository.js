@@ -2,6 +2,7 @@ import { BaseRepository } from './base.repository.js';
 import { AccessControl } from '../utils/access-control.js';
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
+import { logger } from '../utils/logger.js';
 
 export class EmployeeRepository extends BaseRepository {
     constructor() {
@@ -9,22 +10,89 @@ export class EmployeeRepository extends BaseRepository {
         this.idField = 'id_employee';
     }
 
+    async getNextEmployeeId() {
+        // First, try to find any gaps in the sequence
+        const query = `
+            WITH RECURSIVE number_sequence AS (
+                SELECT 1 as num
+                UNION ALL
+                SELECT num + 1
+                FROM number_sequence
+                WHERE num < (
+                    SELECT COALESCE(MAX(CAST(SUBSTRING(id_employee FROM 2) AS INTEGER)), 0) + 1
+                    FROM employee
+                    WHERE id_employee LIKE 'E%'
+                    AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+                )
+            ),
+            used_numbers AS (
+                SELECT CAST(SUBSTRING(id_employee FROM 2) AS INTEGER) as num
+                FROM ${this.tableName}
+                WHERE id_employee LIKE 'E%'
+                AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+            )
+            SELECT ns.num
+            FROM number_sequence ns
+            LEFT JOIN used_numbers un ON ns.num = un.num
+            WHERE un.num IS NULL
+            ORDER BY ns.num
+            LIMIT 1
+        `;
+
+        const { rows } = await pool.query(query);
+        
+        // If we found a gap, use it
+        if (rows.length > 0) {
+            const nextNumber = rows[0].num;
+            const nextId = `E${nextNumber.toString().padStart(3, '0')}`;
+            logger.debug('Found available employee ID in sequence', { nextId });
+            return nextId;
+        }
+
+        // If no gaps found, get the last used number
+        const lastIdQuery = `
+            SELECT id_employee 
+            FROM ${this.tableName}
+            WHERE id_employee LIKE 'E%'
+            AND SUBSTRING(id_employee FROM 2) ~ '^[0-9]+$'
+            ORDER BY CAST(SUBSTRING(id_employee FROM 2) AS INTEGER) DESC
+            LIMIT 1
+        `;
+        const lastIdResult = await pool.query(lastIdQuery);
+        
+        if (lastIdResult.rows.length === 0) {
+            logger.debug('No existing employees found, starting with E001');
+            return 'E001';
+        }
+
+        const lastId = lastIdResult.rows[0].id_employee;
+        const lastNumber = parseInt(lastId.substring(1));
+        const nextNumber = lastNumber + 1;
+        const nextId = `E${nextNumber.toString().padStart(3, '0')}`;
+        
+        logger.debug('Generated next employee ID', { lastId, nextId });
+        return nextId;
+    }
+
     async createWithAuth(data, userRole) {
         if (!AccessControl.can(userRole, 'create', this.tableName)) {
+            logger.warn('Unauthorized attempt to create employee', { userRole });
             throw new Error('Unauthorized');
         }
 
         // Validate required fields
-        if (!data.id_employee || !data.empl_surname || !data.empl_name || !data.empl_role || 
+        if (!data.empl_surname || !data.empl_name || !data.empl_role || 
             !data.salary || !data.phone_number || !data.city || !data.street || !data.zip_code ||
             !data.date_of_birth || !data.date_of_start || !data.email || !data.password) {
+            logger.error('Missing required fields in employee creation', {
+                providedFields: Object.keys(data)
+            });
             throw new Error('Missing required fields');
         }
 
-        // Validate ID format
-        if (!/^E\d{3}$/.test(data.id_employee)) {
-            throw new Error('Employee ID must be in format E followed by 3 digits');
-        }
+        // Always generate new ID, ignoring any provided ID
+        data.id_employee = await this.getNextEmployeeId();
+        logger.info('Generated new employee ID', { id: data.id_employee });
 
         // Validate role
         if (!['cashier', 'manager'].includes(data.empl_role)) {
@@ -90,6 +158,7 @@ export class EmployeeRepository extends BaseRepository {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
+            logger.debug('Started transaction for employee creation');
 
             // Check if employee with this ID already exists
             const existingEmployee = await client.query(
@@ -98,6 +167,7 @@ export class EmployeeRepository extends BaseRepository {
             );
 
             if (existingEmployee.rows.length > 0) {
+                logger.warn('Attempted to create employee with existing ID', { id: data.id_employee });
                 throw new Error('Employee with this ID already exists');
             }
 
@@ -108,6 +178,7 @@ export class EmployeeRepository extends BaseRepository {
             );
 
             if (existingEmail.rows.length > 0) {
+                logger.warn('Attempted to create employee with existing email', { email: data.email });
                 throw new Error('Email is already in use');
             }
 
@@ -127,6 +198,7 @@ export class EmployeeRepository extends BaseRepository {
             `;
 
             const employeeResult = await client.query(employeeQuery, values);
+            logger.info('Created new employee record', { id: employeeResult.rows[0].id_employee });
 
             // Hash password and create auth record
             const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -136,11 +208,19 @@ export class EmployeeRepository extends BaseRepository {
             `;
 
             await client.query(authQuery, [data.id_employee, data.email, hashedPassword]);
+            logger.info('Created employee auth record', { id: data.id_employee });
 
             await client.query('COMMIT');
+            logger.debug('Committed transaction for employee creation');
+            
             return this.formatRow(employeeResult.rows[0]);
         } catch (error) {
             await client.query('ROLLBACK');
+            logger.error('Failed to create employee', {
+                error: error.message,
+                stack: error.stack,
+                employeeData: { ...data, password: '[REDACTED]' }
+            });
             throw error;
         } finally {
             client.release();
@@ -412,10 +492,19 @@ export class EmployeeRepository extends BaseRepository {
     }
 
     async deleteAuth(id) {
-        const query = `
-            DELETE FROM employee_auth
-            WHERE id_employee = $1
-        `;
+        const query = `DELETE FROM employee_auth WHERE id_employee = $1`;
         await pool.query(query, [id]);
+    }
+
+    async searchBySurname(surname) {
+        const query = `
+            SELECT e.*, ea.email 
+            FROM ${this.tableName} e
+            LEFT JOIN employee_auth ea ON e.id_employee = ea.id_employee
+            WHERE LOWER(e.empl_surname) LIKE LOWER($1)
+            ORDER BY e.empl_surname, e.empl_name
+        `;
+        const { rows } = await pool.query(query, [`%${surname}%`]);
+        return rows;
     }
 }

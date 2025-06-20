@@ -124,4 +124,20 @@ export class StoreProductRepository extends BaseRepository {
         const { rows } = await pool.query(query, [upc, quantity]);
         return rows[0];
     }
+
+    async findByUPCWithDetails(upc) {
+        const query = `
+            SELECT 
+                sp.upc as "UPC",
+                sp.selling_price,
+                sp.product_number as "quantity",
+                p.product_name as "name",
+                p.characteristics
+            FROM ${this.tableName} sp
+            JOIN product p ON sp.id_product = p.id_product
+            WHERE sp.upc = $1
+        `;
+        const { rows } = await pool.query(query, [upc]);
+        return rows[0];
+    }
 } 

@@ -1,47 +1,97 @@
 import bcrypt from 'bcrypt';
-import { generateToken } from '../utils/generateToken.js';
+import jwt from 'jsonwebtoken';
+import config from '../config/index.js';
 import { EmployeeRepository } from '../repositories/employee.repository.js';
+import { logger } from '../utils/logger.js';
 
 const employeeRepo = new EmployeeRepository();
 
-export const register = async ({ email, password, fullName }) => {
-  const existing = await employeeRepo.findUserByEmail(email);
-  if (existing) {
-    throw new Error('User already exists');
+export const login = async ({ email, password }) => {
+  logger.info('Login attempt', { email });
+
+  try {
+    const user = await employeeRepo.findUserByEmail(email);
+    if (!user) {
+      logger.warn('Login failed: User not found', { email });
+      throw new Error('Invalid credentials');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      logger.warn('Login failed: Invalid password', { email });
+      throw new Error('Invalid credentials');
+    }
+
+    const token = jwt.sign(
+      { 
+        id_employee: user.id_employee,
+        empl_role: user.empl_role,
+        email: user.email
+      },
+      config.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    logger.info('Login successful', { 
+      id_employee: user.id_employee,
+      empl_role: user.empl_role,
+      email: user.email
+    });
+
+    return { token, user };
+  } catch (error) {
+    logger.error('Login error', {
+      error: error.message,
+      email
+    });
+    throw error;
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await employeeRepo.create({
-    email,
-    password: hashedPassword,
-    empl_name: fullName,
-    // Add required fields
-    id_employee: `E${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-    empl_surname: fullName.split(' ')[0],
-    empl_role: 'cashier', // Default value
-    salary: 8000, // Default value
-    phone_number: '',
-    city: '',
-    street: '',
-    zip_code: ''
-  });
-
-  const token = generateToken(user);
-  return { token, user };
 };
 
-export const login = async ({ email, password }) => {
-  const user = await employeeRepo.findUserByEmail(email);
-  if (!user) throw new Error('User not found');
+export const validateToken = async (token) => {
+  logger.debug('Validating token');
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error('Invalid credentials');
+  try {
+    const decoded = jwt.verify(token, config.jwtSecret);
+    logger.info('Token validated successfully', { 
+      userId: decoded.id_employee,
+      role: decoded.empl_role
+    });
+    return decoded;
+  } catch (error) {
+    logger.warn('Token validation failed', { error: error.message });
+    throw new Error('Invalid token');
+  }
+};
 
-  const token = generateToken({
-    id_employee: user.id_employee,
-    empl_role: user.empl_role,
-    email: user.email
-  });
-  
-  return { token, user };
+export const changePassword = async (userId, { oldPassword, newPassword }) => {
+  logger.info('Password change attempt', { userId });
+
+  try {
+    const employee = await employeeRepo.findById(userId);
+    if (!employee) {
+      logger.warn('Password change failed: Employee not found', { userId });
+      throw new Error('Employee not found');
+    }
+
+    const isValidPassword = await bcrypt.compare(oldPassword, employee.password);
+    if (!isValidPassword) {
+      logger.warn('Password change failed: Invalid old password', { userId });
+      throw new Error('Invalid old password');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    logger.debug('New password hashed successfully', { userId });
+
+    await employeeRepo.updateAuth(userId, { password: hashedPassword });
+    logger.info('Password changed successfully', { userId });
+
+    return { message: 'Password changed successfully' };
+  } catch (error) {
+    logger.error('Password change error', {
+      error: error.message,
+      userId
+    });
+    throw error;
+  }
 };

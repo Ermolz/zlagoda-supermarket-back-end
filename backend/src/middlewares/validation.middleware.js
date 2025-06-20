@@ -10,15 +10,15 @@ export const validateEmployee = (req, res, next) => {
     const isUpdate = req.method === 'PUT';
 
     // Check required fields
-    if (!isUpdate && (!id_employee || !empl_surname || !empl_name || !empl_role || !salary || 
+    if (!isUpdate && (!empl_surname || !empl_name || !empl_role || !salary || 
         !phone_number || !city || !street || !zip_code ||
         !date_of_birth || !date_of_start || !email || !password)) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate ID format if provided
-    if (id_employee && !/^E\d{3}$/.test(id_employee)) {
-        return res.status(400).json({ error: 'Employee ID must be in format E followed by 3 digits' });
+    // Validate ID format only for updates
+    if (isUpdate && id_employee && !/^E\d+$/.test(id_employee)) {
+        return res.status(400).json({ error: 'Employee ID must be in format E followed by digits' });
     }
 
     // Validate role if provided
@@ -173,8 +173,8 @@ export const validateCustomerCard = (req, res, next) => {
     }
 
     // Validate card number format if provided
-    if (card_number && !/^\d{12}$/.test(card_number)) {
-        return res.status(400).json({ error: 'Card number must be 12 digits' });
+    if (card_number && !/^\d{13,}$/.test(card_number)) {
+        return res.status(400).json({ error: 'Card number must be at least 13 digits' });
     }
 
     // Validate phone number format if provided
@@ -224,20 +224,15 @@ export const validateCheck = (req, res, next) => {
     }
 
     // Validate check data
-    const { check_number, id_employee, print_date, sum_total, vat } = check;
+    const { check_number, print_date, sum_total, vat } = check;
 
-    if (!check_number || !id_employee || !print_date || sum_total === undefined || vat === undefined) {
+    if (!check_number || !print_date || sum_total === undefined || vat === undefined) {
         return res.status(400).json({ error: 'Missing required check fields' });
     }
 
     // Validate check number format
-    if (!/^CHECK\d{3}$/.test(check_number)) {
-        return res.status(400).json({ error: 'Check number must be in format CHECK followed by 3 digits' });
-    }
-
-    // Validate employee ID format
-    if (!/^E\d{3}$/.test(id_employee)) {
-        return res.status(400).json({ error: 'Employee ID must be in format E followed by 3 digits' });
+    if (!/^CHK\d+$/.test(check_number)) {
+        return res.status(400).json({ error: 'Check number must be in format CHK followed by digits' });
     }
 
     // Validate print date

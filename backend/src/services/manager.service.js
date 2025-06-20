@@ -6,6 +6,7 @@ import { StoreProductRepository } from '../repositories/store-product.repository
 import { CheckRepository } from '../repositories/check.repository.js';
 import { SaleRepository } from '../repositories/sale.repository.js';
 import { EmployeeService } from './employee.service.js';
+import { ManagerRepository } from '../repositories/manager.repository.js';
 
 export class ManagerService {
     constructor() {
@@ -17,6 +18,7 @@ export class ManagerService {
         this.checkRepo = new CheckRepository();
         this.saleRepo = new SaleRepository();
         this.employeeService = new EmployeeService();
+        this.managerRepository = new ManagerRepository();
     }
 
     // 1. Додавання даних
@@ -136,6 +138,23 @@ export class ManagerService {
         return products.sort((a, b) => a.product_name.localeCompare(b.product_name));
     }
 
+    async searchProducts(name) {
+        if (!name) {
+            return [];
+        }
+        const products = await this.productRepo.findWithCategoryDetails();
+        return products.filter(p => 
+            p.product_name.toLowerCase().includes(name.toLowerCase())
+        ).sort((a, b) => a.product_name.localeCompare(b.product_name));
+    }
+
+    async searchEmployees(surname) {
+        if (!surname) {
+            return [];
+        }
+        return this.employeeRepo.searchBySurname(surname);
+    }
+
     // 14-16. Отримання інформації про товари в магазині
     async getAllStoreProductsSortedByQuantity() {
         const products = await this.storeProductRepo.findWithProductDetails();
@@ -163,8 +182,11 @@ export class ManagerService {
 
     // 17-21. Отримання інформації про чеки та продажі
     async getChecksByEmployee(employeeId, startDate, endDate) {
-        return this.checkRepo.findByDateRange(startDate, endDate)
-            .then(checks => checks.filter(check => check.id_employee === employeeId));
+        return this.checkRepo.findByEmployeeAndDateRange(
+            employeeId,
+            startDate || new Date(0),
+            endDate || new Date()
+        );
     }
 
     async getAllChecksByDateRange(startDate, endDate) {
@@ -257,5 +279,17 @@ export class ManagerService {
                 }
             }))
         };
+    }
+
+    async getSalesByCashierAndPeriod(employeeId, startDate, endDate) {
+        return this.managerRepository.getSalesByCashierAndPeriod(employeeId, startDate, endDate);
+    }
+
+    async getAllCashiersSalesByPeriod(startDate, endDate) {
+        return this.managerRepository.getAllCashiersSalesByPeriod(startDate, endDate);
+    }
+
+    async getProductSalesByPeriod(productId, startDate, endDate) {
+        return this.managerRepository.getProductSalesByPeriod(productId, startDate, endDate);
     }
 } 

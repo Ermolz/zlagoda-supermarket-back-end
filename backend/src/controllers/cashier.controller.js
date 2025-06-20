@@ -1,7 +1,5 @@
 import { CashierService } from '../services/cashier.service.js';
-import priceService from '../services/price.service.js';
-import checkService from '../services/check.service.js';
-import storeProductService from '../services/store-product.service.js';
+import { logger } from '../utils/logger.js';
 
 export class CashierController {
     constructor() {
@@ -42,6 +40,9 @@ export class CashierController {
     async searchProducts(req, res) {
         try {
             const { name } = req.query;
+            if (!name) {
+                return res.status(400).json({ error: 'Name parameter is required' });
+            }
             const products = await this.cashierService.searchProductsByName(name);
             res.json(products);
         } catch (error) {
@@ -55,7 +56,7 @@ export class CashierController {
             const products = await this.cashierService.getProductsByCategory(req.params.categoryId);
             res.json(products);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     }
 
@@ -63,6 +64,9 @@ export class CashierController {
     async searchCustomers(req, res) {
         try {
             const { surname } = req.query;
+            if (!surname) {
+                return res.status(400).json({ error: 'Surname parameter is required' });
+            }
             const customers = await this.cashierService.searchCustomersBySurname(surname);
             res.json(customers);
         } catch (error) {
@@ -87,6 +91,8 @@ export class CashierController {
                 print_date: check.print_date || new Date().toISOString()
             };
 
+            logger.info('checkData', checkData);
+
             const result = await this.cashierService.createCheck(checkData, sales);
             res.status(201).json(result);
         } catch (error) {
@@ -104,8 +110,8 @@ export class CashierController {
     async addCustomerCard(req, res) {
         try {
             // Check card number format
-            if (!/^\d{12}$/.test(req.body.card_number)) {
-                return res.status(400).json({ error: 'Card number must be 12 digits' });
+            if (!/^\d{13,}$/.test(req.body.card_number)) {
+                return res.status(400).json({ error: 'Card number must be at least 13 digits' });
             }
 
             const customer = await this.cashierService.addCustomerCard(req.body);
@@ -148,7 +154,7 @@ export class CashierController {
     // 9. View list of all checks created by the cashier for this day
     async getTodayChecks(req, res) {
         try {
-            const checks = await this.cashierService.getTodayChecks(req.user.id);
+            const checks = await this.cashierService.getTodayChecks(req.user.id_employee);
             res.json(checks);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -159,8 +165,9 @@ export class CashierController {
     async getChecksByDateRange(req, res) {
         try {
             const { startDate, endDate } = req.query;
+            console.log('User data:', req.user);
             const checks = await this.cashierService.getChecksByDateRange(
-                req.user.id,
+                req.user.id_employee,
                 new Date(startDate),
                 new Date(endDate)
             );
@@ -176,8 +183,8 @@ export class CashierController {
             const { checkNumber } = req.params;
             
             // Check format of check number
-            if (!/^CHECK\d{3}$/.test(checkNumber)) {
-                return res.status(400).json({ error: 'Check number must be in format CHECK followed by 3 digits' });
+            if (!/^CHK\d+$/.test(checkNumber)) {
+                return res.status(400).json({ error: 'Check number must be in format CHK followed by digits' });
             }
 
             const check = await this.cashierService.getCheckDetails(checkNumber);
@@ -248,6 +255,19 @@ export class CashierController {
             res.json(cashier);
         } catch (error) {
             res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getProductByUPC(req, res) {
+        try {
+            const product = await this.cashierService.getProductDetailsByUPC(req.params.upc);
+            res.json(product);
+        } catch (error) {
+            if (error.message === 'Product not found') {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     }
 } 

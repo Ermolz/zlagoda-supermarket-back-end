@@ -434,7 +434,7 @@ router.get('/store-products/non-promotional', cashierController.getNonPromotiona
  * @swagger
  * /api/cashier/store-products/{upc}:
  *   get:
- *     summary: Get product details by UPC
+ *     summary: Get store product details by UPC
  *     tags: [Cashier]
  *     security:
  *       - bearerAuth: []
@@ -447,15 +447,26 @@ router.get('/store-products/non-promotional', cashierController.getNonPromotiona
  *         description: Product UPC
  *     responses:
  *       200:
- *         description: Product details (price and quantity)
+ *         description: Product details
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/StoreProduct'
+ *               type: object
+ *               properties:
+ *                 UPC:
+ *                   type: string
+ *                 price:
+ *                   type: number
+ *                 quantity:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 characteristics:
+ *                   type: string
  *       404:
  *         description: Product not found
  */
-router.get('/store-products/:upc', cashierController.getProductDetailsByUPC.bind(cashierController));
+router.get('/store-products/:upc', cashierController.getProductByUPC.bind(cashierController));
 
 // 15. Можливість отримати усю інформацію про себе
 /**
