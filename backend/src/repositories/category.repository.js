@@ -22,7 +22,7 @@ export class CategoryRepository extends BaseRepository {
             throw new Error('Unauthorized');
         }
 
-        // Валидация данных
+        // Data validation
         if (!data.category_name || typeof data.category_name !== 'string') {
             throw new Error('Category name is required and must be a string');
         }
@@ -31,7 +31,7 @@ export class CategoryRepository extends BaseRepository {
             throw new Error('Category name must not exceed 50 characters');
         }
 
-        // Получаем следующий номер категории
+        // Get the next category number
         const categoryNumber = await this.getNextCategoryNumber();
 
         const query = `
@@ -49,7 +49,7 @@ export class CategoryRepository extends BaseRepository {
             throw new Error('Unauthorized');
         }
 
-        // Валидация данных
+        // Data validation
         if (data.category_name) {
             if (typeof data.category_name !== 'string') {
                 throw new Error('Category name must be a string');

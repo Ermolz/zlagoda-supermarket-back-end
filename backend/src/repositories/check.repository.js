@@ -227,7 +227,7 @@ export class CheckRepository extends BaseRepository {
         `;
         const { rows } = await pool.query(query, [employeeId, startDate, endDate]);
         
-        // Преобразуем null в пустой массив для products
+        // Redoo null into empty array for products
         return rows.map(row => ({
             ...row,
             products: row.products || []

@@ -212,7 +212,7 @@ export class StatisticsRepository extends BaseRepository {
         `;
         
         const { rows } = await pool.query(query, [employeeId, startDate, endDate]);
-        return rows[0]; // Возвращаем один результат для конкретного кассира
+        return rows[0]; // Return 1 result for specific cashier
     }
 
     async getTotalSalesAllCashiersByPeriod(startDate, endDate) {
@@ -263,6 +263,6 @@ export class StatisticsRepository extends BaseRepository {
         `;
         
         const { rows } = await pool.query(query, [productId, startDate, endDate]);
-        return rows[0]; // Возвращаем один результат для конкретного товара
+        return rows[0]; // Return 1 result for specific product
     }
 } 
