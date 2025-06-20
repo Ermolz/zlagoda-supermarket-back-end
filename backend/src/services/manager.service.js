@@ -162,7 +162,15 @@ export class ManagerService {
     }
 
     async getStoreProductByUPC(UPC) {
-        return this.storeProductRepo.findById(UPC);
+        const product = await this.storeProductRepo.findByUPCWithDetails(UPC);
+        if (!product) return null;
+        return {
+            UPC: product.UPC,
+            price: product.selling_price,
+            quantity: product.quantity,
+            name: product.name,
+            characteristics: product.characteristics
+        };
     }
 
     async getPromotionalProducts(sortBy = 'quantity') {
@@ -252,33 +260,6 @@ export class ManagerService {
             empl_surname: check.empl_surname,
             empl_name: check.empl_name
         }));
-    }
-
-    async getProductSalesInPeriod(upc, startDate, endDate) {
-        const sales = await this.saleRepo.findSalesByDateRange(
-            startDate ? new Date(startDate) : new Date(0),
-            endDate ? new Date(endDate) : new Date()
-        );
-
-        const productSales = sales.filter(sale => sale.upc === upc);
-        const totalQuantity = productSales.reduce((sum, sale) => sum + parseInt(sale.product_number), 0);
-        const totalAmount = productSales.reduce((sum, sale) => sum + parseFloat(sale.selling_price) * parseInt(sale.product_number), 0);
-
-        return {
-            totalQuantity,
-            totalAmount,
-            sales: productSales.map(sale => ({
-                check_number: sale.check_number,
-                print_date: sale.print_date,
-                quantity: parseInt(sale.product_number),
-                price: parseFloat(sale.selling_price),
-                total: parseFloat(sale.selling_price) * parseInt(sale.product_number),
-                cashier: {
-                    surname: sale.empl_surname,
-                    name: sale.empl_name
-                }
-            }))
-        };
     }
 
     async getSalesByCashierAndPeriod(employeeId, startDate, endDate) {

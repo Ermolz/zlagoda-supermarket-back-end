@@ -164,7 +164,7 @@ export class ManagerController {
 
     async getProductsByCategory(req, res) {
         try {
-            const products = await this.managerService.getProductsByCategory(req.params.categoryId);
+            const products = await this.managerService.getProductsByCategory(req.params.category_number);
             res.json(products);
         } catch (error) {
             res.status(500).json({ error: error.message });

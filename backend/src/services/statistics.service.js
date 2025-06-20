@@ -1,5 +1,4 @@
 import { StatisticsRepository } from '../repositories/statistics.repository.js';
-import { logger } from '../utils/logger.js';
 
 export class StatisticsService {
     constructor() {
